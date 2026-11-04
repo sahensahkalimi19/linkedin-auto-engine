@@ -2,9 +2,8 @@ name: Autonomous LinkedIn Engine
 
 on:
   schedule:
-    # Runs every Mon, Wed, Fri at 9:00 AM IST
     - cron: '30 3 * * 1,3,5'
-  workflow_dispatch: # Allows manual run anytime
+  workflow_dispatch:
 
 jobs:
   build-and-post:
@@ -20,12 +19,11 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
+          pip install google-genai linkedin-api Pillow requests
 
       - name: Run LinkedIn Automation Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LINKEDIN_USERNAME: ${{ secrets.LINKEDIN_USERNAME }}
-          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+          LINKEDIN_COOKIE: ${{ secrets.LINKEDIN_COOKIE }}
         run: |
           python main.py
