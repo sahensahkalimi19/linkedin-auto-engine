@@ -2,7 +2,7 @@ import os
 import json
 import random
 import requests
-import google.generativeai as genai
+from google import genai
 from PIL import Image, ImageDraw, ImageFont
 from linkedin_api import Linkedin
 
@@ -11,7 +11,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 LINKEDIN_USERNAME = os.getenv("LINKEDIN_USERNAME")
 LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD")
 
-genai.configure(api_key=GEMINI_API_KEY)
+# Initialize new Gemini client
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Load profile data
 with open("profile_data.json", "r") as f:
@@ -48,8 +49,11 @@ def generate_content(category, profile):
     }}
     """
     
-    model = genai.GenerativeModel('gemini-3.8-flash')
-    response = model.generate_content(prompt)
+    # Using the latest Gemini 2.5 flash model
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt,
+    )
     
     # Extract JSON string safely
     clean_json = response.text.replace("```json", "").replace("```", "").strip()
