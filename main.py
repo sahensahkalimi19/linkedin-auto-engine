@@ -2,15 +2,13 @@ import os
 import json
 import random
 import time
-import requests
 from google import genai
 from PIL import Image, ImageDraw, ImageFont
 from linkedin_api import Linkedin
 
 # 1. API Keys & Profile Setup
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-LINKEDIN_USERNAME = os.getenv("LINKEDIN_USERNAME")
-LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD")
+LINKEDIN_COOKIE = os.getenv("LINKEDIN_COOKIE") # Using li_at cookie for secure cloud login
 
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable is missing!")
@@ -40,7 +38,7 @@ CATEGORIES = [
 ]
 current_category = random.choice(CATEGORIES)
 
-# 3. Fetch Gemini Post Text & Infographic Card Data (With Fallback & 503 Protection)
+# 3. Fetch Gemini Post Text & Infographic Card Data
 def generate_content(category, profile):
     prompt = f"""
     You are an expert AI & Data Science Thought Leader managing LinkedIn for {profile['name']} ({profile['title']}, {profile['education']}).
@@ -62,7 +60,6 @@ def generate_content(category, profile):
     }}
     """
     
-    # Fallback models list in case one experiences high traffic (503)
     models_to_try = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
     
     for model_name in models_to_try:
@@ -75,7 +72,6 @@ def generate_content(category, profile):
                 )
                 
                 raw_text = response.text.strip()
-                # Safe JSON extraction
                 if "```json" in raw_text:
                     clean_json = raw_text.split("```json")[1].split("```")[0].strip()
                 elif "```" in raw_text:
@@ -89,7 +85,7 @@ def generate_content(category, profile):
                 print(f"Model {model_name} failed on attempt {attempt + 1}: {e}")
                 time.sleep(3)
                 
-    raise RuntimeError("All Gemini models are currently experiencing high traffic (503). Please try again later.")
+    raise RuntimeError("All Gemini models are currently experiencing high traffic (503).")
 
 # 4. Helper Function to Wrap Long Text on Image
 def draw_wrapped_text(draw, text, start_x, start_y, max_width, font, fill_color, line_spacing=45):
@@ -118,16 +114,15 @@ def draw_wrapped_text(draw, text, start_x, start_y, max_width, font, fill_color,
 # 5. Generate Dynamic Infographic/Visual Card
 def create_visual_card(card_data):
     THEMES = [
-        {"bg": "#0f172a", "text": "#ffffff", "accent": "#38bdf8"}, # Dark Slate Tech
-        {"bg": "#18181b", "text": "#f4f4f5", "accent": "#22c55e"}, # Matrix Green Accent
-        {"bg": "#0f2027", "text": "#ffffff", "accent": "#ff007f"}  # Cyberpunk Magenta
+        {"bg": "#0f172a", "text": "#ffffff", "accent": "#38bdf8"}, 
+        {"bg": "#18181b", "text": "#f4f4f5", "accent": "#22c55e"}, 
+        {"bg": "#0f2027", "text": "#ffffff", "accent": "#ff007f"}  
     ]
     theme = random.choice(THEMES)
     
     img = Image.new('RGB', (1080, 1080), color=theme["bg"])
     draw = ImageDraw.Draw(img)
     
-    # Load fonts safely
     try:
         title_font = ImageFont.truetype("arial.ttf", 50)
         body_font = ImageFont.truetype("arial.ttf", 34)
@@ -135,18 +130,15 @@ def create_visual_card(card_data):
     except:
         title_font = body_font = footer_font = ImageFont.load_default()
         
-    # Draw Title with text wrapping
     title_y = draw_wrapped_text(draw, card_data["card_title"], 80, 100, 920, title_font, theme["accent"], line_spacing=60)
     draw.line((80, title_y + 20, 1000, title_y + 20), fill=theme["accent"], width=4)
     
-    # Draw Bullet Points with safety margin
     y_pos = title_y + 60
     for bullet in card_data["card_bullets"]:
         draw.text((80, y_pos), "•", fill=theme["accent"], font=body_font)
         y_pos = draw_wrapped_text(draw, bullet, 130, y_pos, 870, body_font, theme["text"], line_spacing=48)
-        y_pos += 25 # Gap between bullets
+        y_pos += 25 
         
-    # Footer - Personal Branding
     edu_text = f"{profile_info.get('name', 'Usman Gani')} | {profile_info.get('education', 'BCA Data Science Student')}"
     draw.text((80, 980), edu_text, fill="#94a3b8", font=footer_font)
     
@@ -162,12 +154,12 @@ if __name__ == "__main__":
     print("Step 2: Creating Infographic Visual Card...")
     card_path = create_visual_card(content)
     
-    print("Step 3: Logging into LinkedIn & Publishing...")
-    if not LINKEDIN_USERNAME or not LINKEDIN_PASSWORD:
-        raise ValueError("LinkedIn credentials (USERNAME/PASSWORD) are missing in environment variables!")
+    print("Step 3: Logging into LinkedIn via Cookie & Publishing...")
+    if not LINKEDIN_COOKIE:
+        raise ValueError("LINKEDIN_COOKIE is missing in environment variables!")
         
-    api = Linkedin(LINKEDIN_USERNAME, LINKEDIN_PASSWORD)
+    # Authenticate using session cookie to bypass cloud security challenges
+    api = Linkedin('', '', cookies={'li_at': LINKEDIN_COOKIE})
     
-    # Post Image and Caption to Personal Profile
     api.post_share(comment=content["caption"], image_path=card_path)
     print("Successfully Published to LinkedIn Personal Profile!")
