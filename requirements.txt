@@ -1,0 +1,4 @@
+google-generativeai
+linkedin-api
+Pillow
+requests

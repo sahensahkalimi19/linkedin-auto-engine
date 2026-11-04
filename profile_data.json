@@ -1,0 +1,27 @@
+{
+  "name": "Usman Gani",
+  "title": "AI Data Quality Analyst & Python Developer",
+  "education": "BCA Data Science Student",
+  "key_skills": [
+    "Python",
+    "AI Data Quality Analysis",
+    "Automation Pipelines",
+    "Data Science",
+    "Machine Learning Algorithms"
+  ],
+  "featured_projects": [
+    {
+      "name": "TCS iON Hackathon - Open Line Adapter",
+      "type": "Live Web Deployment",
+      "url": "https://openline-adapter-hub-h4we.bolt.hex"
+    },
+    {
+      "name": "L'Oréal Project - Data & E-commerce Workflow",
+      "type": "Structured Analytical PDF Solution"
+    },
+    {
+      "name": "Autonomous Market Scanner & Trading Bot",
+      "type": "Python, Gemini API & Alpaca Integration"
+    }
+  ]
+}
