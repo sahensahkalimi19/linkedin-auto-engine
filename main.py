@@ -89,7 +89,7 @@ def generate_content(category, profile):
                 print(f"Model {model_name} failed on attempt {attempt + 1}: {e}")
                 time.sleep(3)
                 
-    raise RuntimeError("All Gemini models are currently experiencing high traffic (503). Please try again later.")
+    raise RuntimeError("All Gemini models are currently experiencing high traffic (503).")
 
 # 4. Helper Function to Wrap Long Text on Image
 def draw_wrapped_text(draw, text, start_x, start_y, max_width, font, fill_color, line_spacing=45):
@@ -164,6 +164,6 @@ if __name__ == "__main__":
         'JSESSIONID': LINKEDIN_JSESSIONID
     })
     
-    # Using the correct official method submit_share for publishing post
-    api.submit_share(comment=content["caption"])
+    # Correct method for linkedin-api to publish post
+    api.post(content["caption"])
     print("Successfully Published to LinkedIn Personal Profile!")
