@@ -2,9 +2,9 @@ import os
 import json
 import random
 import time
+import requests
 from google import genai
 from PIL import Image, ImageDraw, ImageFont
-from linkedin_api import Linkedin
 
 # 1. API Keys & Secure Cookies Setup
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -150,7 +150,46 @@ def create_visual_card(card_data):
     img.save(file_name)
     return file_name
 
-# 6. Main Execution Flow
+# 6. Publish via Direct LinkedIn API Request (No Broken Libraries)
+def publish_to_linkedin(caption):
+    print("Step 3: Publishing to LinkedIn via Direct API Session...")
+    
+    session = requests.Session()
+    # Clean JSESSIONID by stripping quotes if any
+    jsession_clean = LINKEDIN_JSESSIONID.strip('"').strip("'")
+    
+    session.cookies.set("li_at", LINKEDIN_LI_AT, domain=".linkedin.com")
+    session.cookies.set("JSESSIONID", f'"{jsession_clean}"', domain=".linkedin.com")
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "csrf-token": jsession_clean,
+        "X-Restli-Protocol-Version": "2.0.0"
+    }
+    
+    # Simple text share endpoint check or standard post creation payload
+    post_url = "https://www.linkedin.com/voyager/api/content/posts"
+    
+    payload = {
+        "commentary": caption,
+        "visibility": "PUBLIC",
+        "distribution": {
+            "feedDistribution": "MAIN_FEED",
+            "targetEntities": [],
+            "thirdPartyDistributionChannels": []
+        },
+        "lifecycleState": "PUBLISHED"
+    }
+    
+    response = session.post(post_url, headers=headers, json=payload)
+    if response.status_code in [200, 201]:
+        print("Successfully Published to LinkedIn Personal Profile!")
+    else:
+        print(f"Response status: {response.status_code}, Body: {response.text}")
+        # Fallback print or raise if needed, but let's log it clearly
+        raise RuntimeError(f"Failed to post to LinkedIn. Status: {response.status_code}")
+
+# Main Execution Flow
 if __name__ == "__main__":
     print("Step 1: Generating AI Content...")
     content = generate_content(current_category, profile_info)
@@ -158,12 +197,5 @@ if __name__ == "__main__":
     print("Step 2: Creating Infographic Visual Card...")
     card_path = create_visual_card(content)
     
-    print("Step 3: Logging into LinkedIn via Secure Cookies & Publishing...")
-    api = Linkedin('', '', cookies={
-        'li_at': LINKEDIN_LI_AT,
-        'JSESSIONID': LINKEDIN_JSESSIONID
-    })
-    
-    # Correct method for linkedin-api to publish post
-    api.post(content["caption"])
-    print("Successfully Published to LinkedIn Personal Profile!")
+    # Execute publication
+    publish_to_linkedin(content["caption"])
