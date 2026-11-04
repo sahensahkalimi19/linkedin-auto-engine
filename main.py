@@ -64,7 +64,6 @@ def generate_content(category, profile):
     }}
     """
     
-    # Fallback models list in case one experiences high traffic (503)
     models_to_try = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
     
     for model_name in models_to_try:
@@ -77,7 +76,6 @@ def generate_content(category, profile):
                 )
                 
                 raw_text = response.text.strip()
-                # Safe JSON extraction
                 if "```json" in raw_text:
                     clean_json = raw_text.split("```json")[1].split("```")[0].strip()
                 elif "```" in raw_text:
@@ -120,16 +118,15 @@ def draw_wrapped_text(draw, text, start_x, start_y, max_width, font, fill_color,
 # 5. Generate Dynamic Infographic/Visual Card
 def create_visual_card(card_data):
     THEMES = [
-        {"bg": "#0f172a", "text": "#ffffff", "accent": "#38bdf8"}, # Dark Slate Tech
-        {"bg": "#18181b", "text": "#f4f4f5", "accent": "#22c55e"}, # Matrix Green Accent
-        {"bg": "#0f2027", "text": "#ffffff", "accent": "#ff007f"}  # Cyberpunk Magenta
+        {"bg": "#0f172a", "text": "#ffffff", "accent": "#38bdf8"}, 
+        {"bg": "#18181b", "text": "#f4f4f5", "accent": "#22c55e"}, 
+        {"bg": "#0f2027", "text": "#ffffff", "accent": "#ff007f"}  
     ]
     theme = random.choice(THEMES)
     
     img = Image.new('RGB', (1080, 1080), color=theme["bg"])
     draw = ImageDraw.Draw(img)
     
-    # Load fonts safely
     try:
         title_font = ImageFont.truetype("arial.ttf", 50)
         body_font = ImageFont.truetype("arial.ttf", 34)
@@ -137,18 +134,15 @@ def create_visual_card(card_data):
     except:
         title_font = body_font = footer_font = ImageFont.load_default()
         
-    # Draw Title with text wrapping
     title_y = draw_wrapped_text(draw, card_data["card_title"], 80, 100, 920, title_font, theme["accent"], line_spacing=60)
     draw.line((80, title_y + 20, 1000, title_y + 20), fill=theme["accent"], width=4)
     
-    # Draw Bullet Points with safety margin
     y_pos = title_y + 60
     for bullet in card_data["card_bullets"]:
         draw.text((80, y_pos), "•", fill=theme["accent"], font=body_font)
         y_pos = draw_wrapped_text(draw, bullet, 130, y_pos, 870, body_font, theme["text"], line_spacing=48)
-        y_pos += 25 # Gap between bullets
+        y_pos += 25 
         
-    # Footer - Personal Branding
     edu_text = f"{profile_info.get('name', 'Usman Gani')} | {profile_info.get('education', 'BCA Data Science Student')}"
     draw.text((80, 980), edu_text, fill="#94a3b8", font=footer_font)
     
@@ -165,12 +159,11 @@ if __name__ == "__main__":
     card_path = create_visual_card(content)
     
     print("Step 3: Logging into LinkedIn via Secure Cookies & Publishing...")
-    # Passing both li_at and JSESSIONID to completely avoid KeyError and login challenges
     api = Linkedin('', '', cookies={
         'li_at': LINKEDIN_LI_AT,
         'JSESSIONID': LINKEDIN_JSESSIONID
     })
     
-    # Post Image and Caption to Personal Profile
-    api.post_share(comment=content["caption"], image_path=card_path)
+    # Using the correct official method submit_share for publishing post
+    api.submit_share(comment=content["caption"])
     print("Successfully Published to LinkedIn Personal Profile!")
