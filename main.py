@@ -40,7 +40,7 @@ CATEGORIES = [
 ]
 current_category = random.choice(CATEGORIES)
 
-# 3. Fetch Gemini Post Text & Infographic Card Data (Using gemini-3.8-flash)
+# 3. Fetch Gemini Post Text & Infographic Card Data (With Fallback & 503 Protection)
 def generate_content(category, profile):
     prompt = f"""
     You are an expert AI & Data Science Thought Leader managing LinkedIn for {profile['name']} ({profile['title']}, {profile['education']}).
@@ -62,31 +62,34 @@ def generate_content(category, profile):
     }}
     """
     
-    # Retry mechanism to prevent timeout errors
-    for attempt in range(3):
-        try:
-            print(f"Generating content with Gemini (Attempt {attempt + 1})...")
-            response = client.models.generate_content(
-                model='gemini-3.8-flash',
-                contents=prompt,
-            )
-            
-            raw_text = response.text.strip()
-            # Safe JSON extraction
-            if "```json" in raw_text:
-                clean_json = raw_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in raw_text:
-                clean_json = raw_text.split("```")[1].split("```")[0].strip()
-            else:
-                clean_json = raw_text
+    # Fallback models list in case one experiences high traffic (503)
+    models_to_try = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+    
+    for model_name in models_to_try:
+        for attempt in range(2):
+            try:
+                print(f"Trying model {model_name} (Attempt {attempt + 1})...")
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
                 
-            return json.loads(clean_json)
-            
-        except Exception as e:
-            print(f"Attempt {attempt + 1} failed due to: {e}")
-            if attempt == 2:
-                raise RuntimeError("Failed to generate content from Gemini after 3 attempts.")
-            time.sleep(5)
+                raw_text = response.text.strip()
+                # Safe JSON extraction
+                if "```json" in raw_text:
+                    clean_json = raw_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_text:
+                    clean_json = raw_text.split("```")[1].split("```")[0].strip()
+                else:
+                    clean_json = raw_text
+                    
+                return json.loads(clean_json)
+                
+            except Exception as e:
+                print(f"Model {model_name} failed on attempt {attempt + 1}: {e}")
+                time.sleep(3)
+                
+    raise RuntimeError("All Gemini models are currently experiencing high traffic (503). Please try again later.")
 
 # 4. Helper Function to Wrap Long Text on Image
 def draw_wrapped_text(draw, text, start_x, start_y, max_width, font, fill_color, line_spacing=45):
