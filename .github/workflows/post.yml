@@ -19,12 +19,13 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install google-genai linkedin-api Pillow requests
+          pip install google-genai Pillow playwright requests
+          playwright install chromium
+          playwright install-deps chromium
 
       - name: Run LinkedIn Automation Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LINKEDIN_LI_AT: ${{ secrets.LINKEDIN_LI_AT }}
-          LINKEDIN_JSESSIONID: ${{ secrets.LINKEDIN_JSESSIONID }}
         run: |
           python main.py
