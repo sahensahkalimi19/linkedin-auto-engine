@@ -40,7 +40,7 @@ CATEGORIES = [
 ]
 current_category = random.choice(CATEGORIES)
 
-# 3. Fetch Gemini Post Text & Infographic Card Data (With Retry & Timeout Protection)
+# 3. Fetch Gemini Post Text & Infographic Card Data (Using gemini-3.8-flash)
 def generate_content(category, profile):
     prompt = f"""
     You are an expert AI & Data Science Thought Leader managing LinkedIn for {profile['name']} ({profile['title']}, {profile['education']}).
@@ -62,12 +62,12 @@ def generate_content(category, profile):
     }}
     """
     
-    # Retry mechanism to prevent 504 Deadline Exceeded / Timeout errors
+    # Retry mechanism to prevent timeout errors
     for attempt in range(3):
         try:
             print(f"Generating content with Gemini (Attempt {attempt + 1})...")
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.8-flash',
                 contents=prompt,
             )
             
@@ -96,7 +96,6 @@ def draw_wrapped_text(draw, text, start_x, start_y, max_width, font, fill_color,
     
     for word in words:
         test_line = f"{current_line} {word}".strip()
-        # Check text width using standard box measurement
         bbox = font.getbbox(test_line)
         width = bbox[2] - bbox[0]
         if width <= max_width:
